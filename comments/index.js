@@ -3,6 +3,7 @@ const bodyParser = require("body-parser");
 const { randomBytes } = require("crypto");
 const cors = require("cors");
 const axios = require("axios");
+
 const commentsById = {};
 
 const app = express();
@@ -33,9 +34,27 @@ app.get("/posts/:id/comments", (req, res) => {
 });
 
 //received event
-app.post("/events", (req, res) => {
+app.post("/events", async (req, res) => {
   console.log(" I have received the event", req.body.type);
-  res.send({});
+  const { type, data } = req.body;
+  if (type === "CommentModerated") {
+    const { id, postId, content, status } = data;
+    let commment = commentsById[postId].find((comment) => {
+      return comment.id === id;
+    });
+    commment.status = status;
+    await axios.post("http://localhost:4005/events", {
+      type: "CommentUpdated",
+      data: {
+        id,
+        content,
+        postId,
+        status,
+      },
+    });
+  }
+
+  return res.send({});
 });
 
 app.listen(4001, () => {

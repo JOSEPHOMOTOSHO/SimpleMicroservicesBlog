@@ -5,8 +5,8 @@ const axios = require("axios");
 const app = express();
 app.use(bodyParser.json());
 
-app.post("/events", async (req, res) => {
-  const { type, data } = req.body;
+
+const handleEvents = async (type, data) => {
   if (type === "CommentCreated") {
     let status = data.content.includes("orange") ? "rejected" : "approved";
     await axios.post("http://localhost:4005/events", {
@@ -19,9 +19,20 @@ app.post("/events", async (req, res) => {
       },
     });
   }
+};
+
+app.post("/events", async (req, res) => {
+  const { type, data } = req.body;
+  handleEvents((type, data));
   res.send({});
 });
 
-app.listen(4003, () => {
+app.listen(4003, async () => {
   console.log("i am listening on port 4003");
+  const result = await axios.get("http://localhost:4005/events");
+
+  for (let event of result.data) {
+    console.log("i am processing", event);
+    handleEvents(event.type, event.data);
+  }
 });
